@@ -1,189 +1,250 @@
-# SQL Cheat Sheet for Data Analysts
+# The Ultimate SQL Cheat Sheet for Data Analysts
 
-This cheat sheet summarizes the most commonly used SQL syntax and patterns for data analysis. It is intended as a quick reference for analysts who work with relational databases.
+This cheat sheet summarizes the most commonly used SQL commands and patterns, organized by task. It is intended as a quick reference for analysts who work with relational databases.
 
-## Selecting Data
+## 1\. Data Query Language (DQL) - Retrieving Data 🔎
 
-- **Select all columns:**
+This is the core of data analysis—selecting, filtering, and ordering data.
 
-```sql
-SELECT *
-FROM table_name;
-```
+### Basic `SELECT` Statements
 
-- **Select specific columns:**
+  * **Select all columns from a table:**
+    ```sql
+    SELECT * FROM table_name;
+    ```
+  * **Select specific columns:**
+    ```sql
+    SELECT column1, column2 FROM table_name;
+    ```
+  * **Select unique values:**
+    ```sql
+    SELECT DISTINCT category FROM products;
+    ```
+  * **Alias columns and tables for readability:**
+    ```sql
+    SELECT
+      c.customer_name AS name,
+      o.order_date AS date
+    FROM
+      customers AS c;
+    ```
+  * **Limit the number of results (essential for previewing data):**
+    ```sql
+    -- For MySQL / PostgreSQL
+    SELECT * FROM sales LIMIT 10;
 
-```sql
-SELECT column1, column2, …
-FROM table_name;
-```
+    -- For SQL Server
+    SELECT TOP 10 * FROM sales;
+    ```
 
-- **Alias columns:**
+### Filtering with `WHERE`
 
-```sql
-SELECT column1 AS alias_name
-FROM table_name;
-```
+  * **Basic filtering:**
+    ```sql
+    SELECT * FROM customers WHERE age >= 21;
+    ```
+  * **Conditional Operators:**
+      * **`AND`, `OR`, `NOT`**: Combine multiple conditions.
+        ```sql
+        SELECT * FROM customers WHERE age > 25 AND city = 'Jakarta';
+        ```
+      * **`IN`**: Match any value in a list.
+        ```sql
+        SELECT * FROM orders WHERE status IN ('shipped', 'delivered');
+        ```
+      * **`BETWEEN`**: Filter within a range (inclusive).
+        ```sql
+        SELECT * FROM products WHERE price BETWEEN 100 AND 500;
+        ```
+      * **`LIKE`**: Match a string pattern (`%` for multiple characters, `_` for a single character).
+        ```sql
+        SELECT * FROM users WHERE email LIKE '%@gmail.com';
+        ```
+      * **`IS NULL` / `IS NOT NULL`**: Find empty or non-empty values.
+        ```sql
+        SELECT * FROM employees WHERE manager_id IS NULL;
+        ```
+      * **`EXISTS`**: Check for the existence of rows in a subquery.
+        ```sql
+        SELECT name FROM customers c
+        WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);
+        ```
 
-## Filtering Rows
+### Sorting with `ORDER BY`
 
-- **Basic filtering using `WHERE`:**
+  * Sort results in ascending (`ASC`) or descending (`DESC`) order.
+    ```sql
+    SELECT product_name, price FROM products
+    ORDER BY price DESC, product_name ASC;
+    ```
 
-```sql
-SELECT *
-FROM table_name
-WHERE condition;
-```
-
-Example filtering by equality and comparison:
-
-```sql
-SELECT name, age
-FROM customers
-WHERE age >= 18 AND status = 'active';
-```
-
-- **Using operators:**
-  - `AND`, `OR`, `NOT` to combine conditions
-  - `IN` to test membership in a list
-  - `BETWEEN` for range comparisons
-  - `LIKE` with `%` wildcard for pattern matching
-
-Example using `IN` and `LIKE`:
-
-```sql
-SELECT order_id
-FROM orders
-WHERE status IN ('shipped', 'delivered')
-  AND customer_name LIKE 'A%';
-```
-
-## Sorting Results
-
-Use `ORDER BY` to sort query results:
-
-```sql
-SELECT *
-FROM sales
-ORDER BY sale_date DESC, amount ASC;
-```
-
-Add `DESC` for descending order and `ASC` (or omit) for ascending order.
-
-## Aggregation and Grouping
-
-Aggregate functions compute a single result from multiple rows:
-
-- `COUNT()`, `SUM()`, `AVG()`, `MIN()`, `MAX()`
-
-Example summarizing total revenue per category:
-
-```sql
-SELECT category,
-       SUM(revenue) AS total_revenue,
-       COUNT(*)     AS num_sales
-FROM sales
-GROUP BY category
-HAVING SUM(revenue) > 1000;
-```
-
-Use `HAVING` to filter groups (it works like `WHERE` but after aggregation).
-
-## Joining Tables
+## 2\. Joining Tables 🤝
 
 Joins combine rows from two or more tables based on a related column.
 
-- **INNER JOIN** – returns only matching rows from both tables.
-- **LEFT JOIN (LEFT OUTER JOIN)** – returns all rows from the left table plus matching rows from the right table; missing values from the right table are `NULL`.
-- **RIGHT JOIN (RIGHT OUTER JOIN)** – returns all rows from the right table plus matching rows from the left.
-- **FULL OUTER JOIN** – returns all rows when there is a match in either table.
-- **CROSS JOIN** – returns the Cartesian product of the two tables.
+  * **`INNER JOIN`**: Returns only the matching rows from both tables.
+  * **`LEFT JOIN`**: Returns all rows from the left table and the matched rows from the right table.
+  * **`RIGHT JOIN`**: Returns all rows from the right table and the matched rows from the left table.
+  * **`FULL OUTER JOIN`**: Returns all rows when there is a match in either table.
 
-Example of an inner join:
-
-```sql
-SELECT o.order_id, c.customer_name, o.total
-FROM orders AS o
-INNER JOIN customers AS c
-  ON o.customer_id = c.customer_id;
-```
-
-## Subqueries
-
-Use subqueries (queries nested inside another query) to perform advanced filtering or calculations.
-
-Example selecting customers who spent more than the average order amount:
+<!-- end list -->
 
 ```sql
-SELECT customer_id,
-       SUM(amount) AS total_spent
-FROM orders
-GROUP BY customer_id
-HAVING SUM(amount) > (
-    SELECT AVG(amount)
-    FROM orders
-);
+SELECT
+  o.order_id,
+  c.customer_name,
+  p.product_name
+FROM
+  orders AS o
+INNER JOIN
+  customers AS c ON o.customer_id = c.customer_id
+LEFT JOIN
+  products AS p ON o.product_id = p.product_id;
 ```
 
-## Window Functions
+## 3\. Aggregating & Grouping Data 📊
 
-Window functions perform calculations across a set of rows related to the current row and require an `OVER()` clause. They do not collapse rows like aggregations.
+Aggregate functions perform a calculation on a set of values and return a single value.
 
-Examples:
+  * **`COUNT()`**: Counts the number of rows. `COUNT(DISTINCT column)` counts unique values.
+  * **`SUM()`**: Calculates the sum of a numeric column.
+  * **`AVG()`**: Calculates the average of a numeric column.
+  * **`MIN()` / `MAX()`**: Finds the minimum or maximum value.
 
-- **ROW_NUMBER()** assigns a unique number to each row in the result set:
+The **`GROUP BY`** clause groups rows that have the same values into summary rows. The **`HAVING`** clause is used to filter these groups.
 
 ```sql
-SELECT order_id,
-       ROW_NUMBER() OVER (ORDER BY order_date) AS row_num
-FROM orders;
+SELECT
+  category,
+  AVG(price) AS average_price,
+  COUNT(*) AS number_of_products
+FROM
+  products
+WHERE
+  is_active = TRUE
+GROUP BY
+  category
+HAVING
+  COUNT(*) > 10;
 ```
 
-- **RANK()** and **DENSE_RANK()** rank rows with handling for ties:
+## 4\. Advanced Querying 🚀
+
+### `CASE` Statements
+
+Create new categories based on conditional logic.
 
 ```sql
-SELECT customer_id,
-       amount,
-       RANK() OVER (ORDER BY amount DESC) AS rank,
-       DENSE_RANK() OVER (ORDER BY amount DESC) AS dense_rank
-FROM invoices;
+SELECT
+  order_id,
+  amount,
+  CASE
+    WHEN amount > 1000 THEN 'High Value'
+    WHEN amount > 500 THEN 'Medium Value'
+    ELSE 'Low Value'
+  END AS order_category
+FROM
+  orders;
 ```
 
-- **LAG()** and **LEAD()** access data from preceding or following rows:
+### Subqueries (Nested Queries)
+
+A query nested inside another query. Often used in the `WHERE`, `FROM`, or `SELECT` clause.
 
 ```sql
-SELECT order_date,
-       amount,
-       LAG(amount) OVER (ORDER BY order_date)  AS previous_amount,
-       LEAD(amount) OVER (ORDER BY order_date) AS next_amount
-FROM sales;
+-- Find customers who have placed an order
+SELECT customer_name FROM customers
+WHERE customer_id IN (SELECT DISTINCT customer_id FROM orders);
 ```
 
-- **Moving averages** using `AVG()` with `ROWS BETWEEN`:
+### Window Functions
+
+Perform calculations across a set of table rows. Unlike `GROUP BY`, they do not collapse rows.
+
+  * **`ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`**: Assign ranks to rows.
+  * **`LAG()`, `LEAD()`**: Access data from previous or subsequent rows.
+  * **`SUM()`, `AVG()`, `COUNT()` as window functions**: Calculate running totals, moving averages, etc.
+
+<!-- end list -->
 
 ```sql
-SELECT order_date,
-       amount,
-       AVG(amount) OVER (
-         ORDER BY order_date
-         ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-       ) AS seven_day_avg
-FROM daily_sales;
+-- Calculate a 7-day moving average of sales
+SELECT
+  sale_date,
+  daily_revenue,
+  AVG(daily_revenue) OVER (
+    ORDER BY sale_date
+    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+  ) AS seven_day_moving_avg
+FROM
+  daily_sales;
 ```
 
-## Set Operations
+### Set Operators
 
-Combine result sets with set operators:
+Combine the results of two or more `SELECT` statements.
 
-- `UNION` – combines two result sets and removes duplicates.
-- `UNION ALL` – combines and keeps duplicates.
-- `INTERSECT` – returns rows present in both result sets.
-- `EXCEPT` – returns rows from the first query not present in the second.
+  * **`UNION`**: Combines result sets and removes duplicates.
+  * **`UNION ALL`**: Combines result sets and includes all duplicates.
+  * **`INTERSECT`**: Returns only rows that appear in both result sets.
+  * **`EXCEPT` / `MINUS`**: Returns rows from the first result set that are not in the second.
 
-```sql
-SELECT id FROM table_a
-UNION ALL
-SELECT id FROM table_b;
-```
+## 5\. Data Manipulation Language (DML) - Modifying Data ✍️
 
-Keep this cheat sheet handy while writing SQL queries for quick reference!
+  * **Insert new rows:**
+
+    ```sql
+    INSERT INTO customers (customer_name, city)
+    VALUES ('Nurwandhika', 'Tangerang');
+    ```
+
+  * **Update existing rows:**
+
+    ```sql
+    UPDATE customers
+    SET city = 'South Tangerang'
+    WHERE customer_name = 'Nurwandhika';
+    ```
+
+  * **Delete rows:**
+
+    ```sql
+    DELETE FROM customers WHERE customer_name = 'Nurwandhika';
+    ```
+
+    **⚠️ Warning:** `DELETE FROM customers;` without a `WHERE` clause will delete **all rows** in the table.
+
+  * **Truncate a table (delete all data quickly):**
+
+    ```sql
+    TRUNCATE TABLE table_name;
+    ```
+
+## 6\. Data Definition Language (DDL) - Structuring Data 🏗️
+
+  * **Create a table:**
+    ```sql
+    CREATE TABLE employees (
+      id INT PRIMARY KEY,
+      name VARCHAR(100),
+      hire_date DATE
+    );
+    ```
+  * **Alter a table (add/remove columns):**
+    ```sql
+    ALTER TABLE employees ADD COLUMN salary DECIMAL(10, 2);
+    ALTER TABLE employees DROP COLUMN hire_date;
+    ```
+  * **Drop a table (permanently delete):**
+    ```sql
+    DROP TABLE employees;
+    ```
+  * **Create an index (speed up queries):**
+    ```sql
+    CREATE INDEX idx_employee_name ON employees (name);
+    ```
+  * **Create a view (a stored, virtual table):**
+    ```sql
+    CREATE VIEW active_customers AS
+    SELECT * FROM customers WHERE is_active = TRUE;
+    ```
